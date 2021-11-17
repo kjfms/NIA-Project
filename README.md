@@ -37,8 +37,8 @@
 
 * * *
   
-## 4. 민원 키워드 분석
-### (1) 분석 프로세스
+# 4. 민원 키워드 분석
+## (1) 분석 프로세스
 <p align="center"><img src =https://user-images.githubusercontent.com/82136585/142091689-aad6858d-694c-4a2c-b726-f7bc50d943e0.png>
 
 #### 1) 민원 텍스트 수집
