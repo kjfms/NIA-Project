@@ -19,5 +19,6 @@
 - #### 2020년 장흥군청 정보공개청구 민원 데이터
 
 ## 3. 민원 현황 및 유형 분석
+### (1) 분석 프로세스
 <p align="center"><img src =https://user-images.githubusercontent.com/82136585/142090397-6ba31dbb-241e-42e8-acb2-903670f2e7a9.png>
-<p align="center"><img src =https://user-images.githubusercontent.com/82136585/142090977-cb724536-282b-4844-99a6-f3589f871020.png>
+
