@@ -1,0 +1,136 @@
+---
+title: "유형별 분석"
+author: 'kuma987'
+date: "`r format(Sys.time(), '%Y년 %B %d일')`"
+output:
+  html_document: 
+    fig_height: 6
+    fig_width: 10
+    highlight: textmate
+    toc: yes
+    toc_float: yes
+  word_document:
+    highlight: tango
+    reference_docx: korean-template.docx
+  pdf_document:
+    latex_engine: xelatex
+mainfont: NanumGothic
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 패키지 불러오기
+```{r}
+
+pkgs <- c('readxl', 'lubridate', 'plyr', 'ggplot2', 'showtext')
+for (pkg in pkgs) if (!pkg %in% installed.packages()[,1]) install.packages(pkg)
+invisible (lapply(pkgs,library,character.only=T))
+```
+
+
+# 데이터 전처리
+
+### 데이터 불러오기
+```{r}
+m <- read_excel('C:/Users/user/Desktop/지정과제/data/minwon.xlsx',sheet=1)
+```
+
+### 처리부서 열에서 '전라남도 장흥군' 지우기
+```{r}
+m$처리부서<- substr(m$처리부서,10,17)
+```
+
+### 접수일에서 요일, 월 변환 칼럼 생성
+```{r}
+m$접수월 <- month(m$접수일)
+m$접수월 <- as.factor(m$접수월)
+m$접수요일 <- wday(m$접수일,label=T)
+```
+
+### 데이터 저장
+```{r}
+#write.xlsx(m, '저장할 경로/minwon.xlsx')
+```
+
+
+
+# 시각화 시작
+
+### 나눔고딕 폰트
+```{r}
+font_add_google("Nanum Gothic","nanumgothic")
+showtext_auto()
+```
+
+### 데이터 불러오기
+```{r}
+minwon <- read_excel('C:/Users/user/Desktop/지정과제/data/minwon.xlsx',sheet=1)
+head(minwon)
+str(minwon)
+```
+
+### 유형별 분석을 위한 팩터형 변환
+```{r}
+minwon$접수요일 <- as.factor(minwon$접수요일)
+minwon$접수월 <- as.factor(minwon$접수월)
+minwon$공개방법 <- as.factor(minwon$공개방법)
+minwon$처리부서 <- as.factor(minwon$처리부서)
+minwon$결정구분 <- as.factor(minwon$결정구분)
+minwon$공개형태 <- as.factor(minwon$공개형태)
+minwon$교부방법 <- as.factor(minwon$교부방법)
+minwon$처리상태 <- as.factor(minwon$처리상태)
+minwon$청구방법 <- as.factor(minwon$청구방법)
+```
+
+### 월별 분석
+```{r}
+minwon_month <- ddply(minwon,.(접수월), summarise, Count = sum(NROW(청구제목)))
+minwon_month$접수월 <- factor(minwon_month$접수월,levels=1:12)
+ggplot(minwon_month) + geom_bar(aes(x=접수월,y=Count,fill=접수월),stat='identity')+
+  labs(title="장흥군청 월별 민원 현황") + ylab('민원 수') + 
+  theme(axis.ticks.x=element_blank(),legend.position = 'none', plot.title = element_text(hjust = 0.5))
+
+```
+
+### 요일별 분석
+```{r}
+minwon_wday <- ddply(minwon,.(접수요일), summarise, Count = sum(NROW(청구제목)))
+minwon_wday$접수요일 <- factor(minwon_wday$접수요일,levels=c('월','화','수','목','금','토','일'))
+ggplot(minwon_wday) + geom_bar(aes(x=접수요일,y=Count,fill=접수요일),stat='identity') +
+  labs(title="장흥군청 요일별 민원 현황") + ylab('민원 수') +
+  theme(axis.ticks.x=element_blank(), legend.position = 'none', plot.title = element_text(hjust = 0.5))
+```
+
+### 정보공개 유형별 분석
+```{r}
+minwon_open <- ddply(minwon,.(공개형태), summarise, Count = sum(NROW(청구제목)))
+minwon_open <- minwon_open[complete.cases(minwon_open$공개형태),]
+minwon_open$공개형태 <- factor(minwon_open$공개형태, levels=c('전자파일','사본·출력물','열람·시청','복제·인화물','기타','<NA>'))
+ggplot(minwon_open) + geom_bar(aes(x=공개형태,y=Count,fill=공개형태),stat='identity') +
+  labs(title="정보공개 유형별 민원 현황") + ylab('민원 수') +
+  theme(legend.position = 'none', plot.title = element_text(hjust = 0.5))
+```
+
+### 부서별 처리수 분석
+```{r}
+minwon_depart <- ddply(minwon,.(처리부서), summarise, Count = sum(NROW(청구제목)))
+minwon_depart <- minwon_depart[complete.cases(minwon_depart$처리부서),]
+minwon_depart[order(minwon_depart$Count,decreasing=T),]
+minwon_depart$처리부서 <- factor(minwon_depart$처리부서, levels=minwon_depart[order(minwon_depart$Count, decreasing=T),'처리부서'])
+ggplot(minwon_depart) + geom_bar(aes(x=처리부서,y=Count,fill=처리부서),stat='identity') +
+  labs(title="부서별 민원 처리 현황") + ylab('민원 수') + 
+  theme(axis.text.x=element_blank(), axis.ticks.x=element_blank(), plot.title = element_text(hjust = 0.5))
+```
+
+### 부서별 평균처리기간 분석
+```{r}
+minwon_delay <- ddply(minwon,.(처리부서), summarise, 처리기간 = round(mean(처리기간),2))
+minwon_delay <- minwon_delay[complete.cases(minwon_delay$처리부서),]
+minwon_delay$처리부서 <- factor(minwon_delay$처리부서, levels=minwon_delay[order(minwon_delay$처리기간),'처리부서'])
+ggplot(minwon_delay) + geom_bar(aes(x=처리부서,y=처리기간,fill=처리부서),stat='identity') +
+  labs(title="부서별 민원 평균 처리기간 현황") + ylab('처리기간 (일)') + coord_flip() +
+  theme(legend.position = 'none', axis.ticks.y=element_blank(), plot.title = element_text(hjust = 0.5)) 
+```
+
